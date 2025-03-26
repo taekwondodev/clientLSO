@@ -1,22 +1,30 @@
 #include "h/client.h"
 #include "h/socket.h"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+#include <stdlib.h>
+
+int sock;
+
+void sig_handler(int signo) {
+	if (signo == SIGINT || signo == SIGTERM) {
+		printf("Exiting...closing socket\n");
+		close(sock);
+		exit(0);
+	}
+}
+
 int main() {
-	int choice;
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
+
 	struct sockaddr_in server_addr;
 
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(SERVER_PORT);
-	server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
-
-	int sock = open_socket();
+	sock = open_socket();
+	setup_server_address(&server_addr);
 	connection_to_server(sock, &server_addr);
-
-	printf("Connesso al server\n");
-
-
-
-	printf("*****Benvenuto nella Videoteca!*****\n");
 
 	return 0;
 }
