@@ -1,5 +1,5 @@
-#include "client.h"
-#include "socket.h"
+#include "h/client.h"
+#include "h/socket.h"
 
 int main() {
 	int choice;
