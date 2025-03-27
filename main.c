@@ -27,6 +27,7 @@ int main() {
 	connection_to_server(sock, &server_addr);
 
 	welcome_menu(sock);
+	home_menu(sock);
 
 	return 0;
 }

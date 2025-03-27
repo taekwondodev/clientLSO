@@ -7,3 +7,5 @@ void welcome_menu(int client_socket);
 int sign_in(int client_socket);
 
 int sign_up(int client_socket);
+
+void home_menu(int client_socket);
