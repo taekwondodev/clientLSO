@@ -2,7 +2,6 @@
 #include <sys/socket.h>
 
 #define SERVER_PATH ""
-#define BUFFER_SIZE 1024
 
 int open_socket();
 

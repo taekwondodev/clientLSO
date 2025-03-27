@@ -26,5 +26,7 @@ int main() {
 	setup_server_address(&server_addr);
 	connection_to_server(sock, &server_addr);
 
+	welcome_menu(sock);
+
 	return 0;
 }

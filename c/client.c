@@ -3,6 +3,102 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+#include <sys/socket.h>
+
+int sign_up(int client_socket) {
+	int result;
+	int request_type = SIGN_UP;
+	char _username[50];
+	char password[50];
+
+	printf("*****************\n");
+	printf("Inserisci uno username: \n");
+	scanf("%49s", _username);
+
+	printf("Inserisci una password: \n");
+	scanf("%49s", password);
+
+	// invio richiesta SIGN_UP
+	if((send(client_socket, &request_type, sizeof(request_type), 0)) < 0) {
+		perror("Errore nell'invio richiesta");
+		return 1;
+	}
+
+	// invio username
+	if((send(client_socket, _username, strlen(_username), 0)) < 0) {
+		perror("Errore nell'invio username");
+		return 1;
+	}
+
+	// invio password
+	if((send(client_socket, password, strlen(password), 0)) < 0) {
+		perror("Errore nell'invio password");
+		return 1;
+	}
+
+	printf("Caricamento...\n");
+
+	// ricevuta risposta
+	recv(client_socket, &result, sizeof(result), 0);
+
+	if(result == 0) {
+		printf("Registrazione avvenuta con successo!");
+		strcpy(username, _username);
+		return result;
+	}
+	else {
+		perror("Errore nel ricevere il messaggio");
+		return 1;
+	}
+}
+
+int sign_in(int client_socket){
+	int result;
+	int request_type = SIGN_IN;
+	char _username[50];
+	char password[50];
+
+	printf("*****************\n");
+	printf("Inserisci uno username: \n");
+	scanf("%49s", _username);
+
+	printf("Inserisci una password: \n");
+	scanf("%49s", password);
+
+	// invio richiesta SIGN_IN
+	if((send(client_socket, &request_type, sizeof(request_type), 0)) < 0) {
+		perror("Errore nell'invio richiesta");
+		return 1;
+	}
+
+	// invio username
+	if((send(client_socket, _username, strlen(_username), 0)) < 0) {
+		perror("Errore nell'invio username");
+		return 1;
+	}
+
+	// invio password
+	if((send(client_socket, password, strlen(password), 0)) < 0) {
+		perror("Errore nell'invio password");
+		return 1;
+	}
+
+	printf("Caricamento...\n");
+
+	// ricevuta risposta
+	recv(client_socket, &result, sizeof(result), 0);
+
+	if(result == 0) {
+		printf("Login avvenuto con successo!");
+		strcpy(username, _username);
+		return result;
+	}
+	else {
+		perror("Errore nel ricevere il messaggio");
+		return 1;
+	}
+}
 
 void welcome_menu(int client_socket) {
 	int choice;
@@ -18,16 +114,17 @@ void welcome_menu(int client_socket) {
 
 		switch(choice) {
 			case 1:
-				// registrazione e break
+				if(sign_up(client_socket) == 0)
+					return;
 			case 2:
-				// login e break
+				if(sign_in(client_socket) == 0)
+					return;
 			case 3:
 				close(client_socket);
 				exit(EXIT_SUCCESS);
 				break;
 			default:
-				printf("Valore non valido");
+				printf("Valore non valido\n");
 		}
-
 	}
 }
