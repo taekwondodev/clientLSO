@@ -6,6 +6,8 @@
 #include <string.h>
 #include <sys/socket.h>
 
+static char username[50];
+
 int sign_up(int client_socket) {
 	int result;
 	int request_type = SIGN_UP;

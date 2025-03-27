@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-int sock;
+static int sock;
 
 void sig_handler(int signo) {
 	if (signo == SIGINT || signo == SIGTERM) {
