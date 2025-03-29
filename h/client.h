@@ -1,6 +1,11 @@
 #define BUFFER_SIZE 1024
-#define SIGN_UP 1
-#define SIGN_IN 2
+
+#define SIGN_UP "REGISTER"
+#define SIGN_IN "LOGIN"
+#define SEARCH "SEARCH"
+#define RENT "RENT"
+#define RETURN "RETURN"
+#define MY_RENTALS "MYRENTALS"
 
 void welcome_menu(int client_socket);
 

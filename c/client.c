@@ -10,7 +10,7 @@ static char username[50];
 
 int sign_up(int client_socket) {
 	int result;
-	int request_type = SIGN_UP;
+	char* request_type = SIGN_UP;
 	char _username[50];
 	char password[50];
 
@@ -22,19 +22,19 @@ int sign_up(int client_socket) {
 	scanf("%49s", password);
 
 	// invio richiesta SIGN_UP
-	if((send(client_socket, &request_type, sizeof(request_type), 0)) < 0) {
+	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
 		perror("Errore nell'invio richiesta");
 		return 1;
 	}
 
 	// invio username
-	if((send(client_socket, _username, strlen(_username), 0)) < 0) {
+	if((send(client_socket, _username, strlen(_username) + 1, 0)) < 0) {
 		perror("Errore nell'invio username");
 		return 1;
 	}
 
 	// invio password
-	if((send(client_socket, password, strlen(password), 0)) < 0) {
+	if((send(client_socket, password, strlen(password) + 1, 0)) < 0) {
 		perror("Errore nell'invio password");
 		return 1;
 	}
@@ -57,7 +57,7 @@ int sign_up(int client_socket) {
 
 int sign_in(int client_socket){
 	int result;
-	int request_type = SIGN_IN;
+	char* request_type = SIGN_IN;
 	char _username[50];
 	char password[50];
 
@@ -69,19 +69,19 @@ int sign_in(int client_socket){
 	scanf("%49s", password);
 
 	// invio richiesta SIGN_IN
-	if((send(client_socket, &request_type, sizeof(request_type), 0)) < 0) {
+	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
 		perror("Errore nell'invio richiesta");
 		return 1;
 	}
 
 	// invio username
-	if((send(client_socket, _username, strlen(_username), 0)) < 0) {
+	if((send(client_socket, _username, strlen(_username) + 1, 0)) < 0) {
 		perror("Errore nell'invio username");
 		return 1;
 	}
 
 	// invio password
-	if((send(client_socket, password, strlen(password), 0)) < 0) {
+	if((send(client_socket, password, strlen(password) + 1, 0)) < 0) {
 		perror("Errore nell'invio password");
 		return 1;
 	}
@@ -140,7 +140,8 @@ void home_menu(int client_socket) {
 		printf("1) Cercare un film \n");
 		printf("2) Noleggiare un film \n");
 		printf("3) Restituire un film \n");
-		printf("4) Esci \n");
+		printf("4) Visualizzare i miei noleggi \n");
+		printf("5) Esci \n");
 
 		scanf("%d", &choice);
 
