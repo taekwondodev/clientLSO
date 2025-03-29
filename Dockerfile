@@ -3,15 +3,11 @@ FROM gcc:latest
 
 # Installa le dipendenze necessarie, inclusa OpenSSL
 RUN apt-get update && apt-get install -y \
-    git \
     libssl-dev \
+    libcjson-dev \
     make \
-    && rm -rf /var/lib/apt/lists/* && \
-    git clone https://github.com/DaveGamble/cJSON.git /tmp/cJSON && \
-    cd /tmp/cJSON && \
-    make && \
-    make install && \
-    rm -rf /tmp/cJSON
+    tree \
+    && rm -rf /var/lib/apt/lists/*
 
 # Imposta la directory di lavoro all'interno del container
 WORKDIR /app
