@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <cjson/cJSON.h>
 
 static char username[50];
 
@@ -167,4 +168,110 @@ void home_menu(int client_socket) {
 				printf("Valore non valido\n");
 		}
 	}
+}
+
+void search_menu(int client_socket) {
+	int choice;
+	char* request_type = SEARCH;
+	char* request_type_option;
+	char search[50];
+	char buffer[BUFFER_SIZE];
+
+	while(1) {
+		printf("------ Cerca ------\n");
+		printf("Scegli un opzione: \n");
+		printf("1) Cerca per titolo \n");
+		printf("2) Cerca per genere \n");
+		printf("3) Torna indietro \n");
+
+		scanf("%d", &choice);
+
+		switch(choice) {
+			case 1:
+				printf("Inserisci il titolo del film: \n");
+				scanf("%49s", search);
+				request_type_option = SEARCH_TITLE;
+				break;
+			case 2:
+				printf("Inserisci il genere del film: \n");
+				scanf("%49s", search);
+				request_type_option = SEARCH_GENRE;
+				break;
+			case 3:
+				return;
+			default:
+				printf("Valore non valido\n");
+		}
+
+		// invio richiesta SEARCH
+		if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
+			perror("Errore nell'invio richiesta");
+			return;
+		}
+
+		if((send(client_socket, request_type_option, strlen(request_type_option) + 1, 0)) < 0) {
+			perror("Errore nell'invio opzione");
+			return;
+		}
+
+		if((send(client_socket, search, strlen(search) + 1, 0)) < 0) {
+			perror("Errore nell'invio ricerca");
+			return;
+		}
+
+		printf("Caricamento...\n");
+
+		/// ricezione risposta
+		int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received < 0) {
+            perror("Errore nella ricezione della risposta");
+            return;
+        }
+        buffer[bytes_received] = '\0'; // Per terminare la stringa al punto dove finisce
+
+		// Parsing della risposta in JSON
+        cJSON *json = cJSON_Parse(buffer);
+        if (json == NULL) {
+            printf("Errore nel parsing della risposta JSON\n");
+            return;
+        }
+
+		printListofFilmJson(json);
+		cJSON_Delete(json); // Libera la memoria allocata per il JSON
+    }
+}
+
+void printListofFilmJson(cJson *json) {
+	cJSON *film_list = json;
+    cJSON *film;
+    cJSON_ArrayForEach(film, film_list) {
+        cJSON *film_id = cJSON_GetObjectItem(film, "film_id");
+        cJSON *titolo = cJSON_GetObjectItem(film, "titolo");
+        cJSON *genere = cJSON_GetObjectItem(film, "genere");
+        cJSON *copie_totali = cJSON_GetObjectItem(film, "copie_totali");
+        cJSON *copie_disponibili = cJSON_GetObjectItem(film, "copie_disponibili");
+
+        printf("Film ID: %d\n", film_id->valueint);
+        printf("Titolo: %s\n", titolo->valuestring);
+        printf("Genere: %s\n", genere->valuestring);
+        printf("Copie Totali: %d\n", copie_totali->valueint);
+        printf("Copie Disponibili: %d\n", copie_disponibili->valueint);
+
+        // Iterazione sui prestiti
+        cJSON *prestiti = cJSON_GetObjectItem(film, "prestiti");
+        if (cJSON_IsArray(prestiti)) {
+            cJSON *prestito;
+            cJSON_ArrayForEach(prestito, prestiti) {
+                cJSON *user_id = cJSON_GetObjectItem(prestito, "user_id");
+                cJSON *timestamp = cJSON_GetObjectItem(prestito, "timestamp");
+                cJSON *due_date = cJSON_GetObjectItem(prestito, "due_date");
+
+                printf("  Prestito:\n");
+                printf("    User ID: %s\n", user_id->valuestring);
+                printf("    Timestamp: %ld\n", timestamp->valuedouble);
+                printf("    Due Date: %s\n", due_date->valuestring);
+            }
+        }
+        printf("\n");
+    }
 }
