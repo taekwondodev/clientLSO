@@ -146,21 +146,17 @@ void home_menu(int client_socket) {
 		printf("------ Home ------\n");
 		printf("Scegli un opzione: \n");
 		printf("1) Cercare un film \n");
-		printf("2) Noleggiare un film \n");
-		printf("3) Restituire un film \n");
-		printf("4) Visualizzare i miei noleggi \n");
-		printf("5) Esci \n");
+		printf("2) Restituire un film \n");
+		printf("3) Esci \n");
 
 		scanf("%d", &choice);
 
 		switch(choice) {
 			case 1:
-				
+				search_menu(client_socket);
 			case 2:
-				
-			case 3:
 
-			case 4:
+			case 3:
 				close(client_socket);
 				exit(EXIT_SUCCESS);
 				break;
