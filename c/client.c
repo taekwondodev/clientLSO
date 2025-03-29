@@ -1,4 +1,5 @@
 #include "../h/client.h"
+#include "../h/hash.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,7 @@ int sign_up(int client_socket) {
 	char* request_type = SIGN_UP;
 	char _username[50];
 	char password[50];
+	unsigned char hashed_password[SHA256_DIGEST_LENGTH];
 
 	printf("*****************\n");
 	printf("Inserisci uno username: \n");
@@ -20,6 +22,8 @@ int sign_up(int client_socket) {
 
 	printf("Inserisci una password: \n");
 	scanf("%49s", password);
+
+	hash_password(password, hashed_password);
 
 	// invio richiesta SIGN_UP
 	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
@@ -34,7 +38,7 @@ int sign_up(int client_socket) {
 	}
 
 	// invio password
-	if((send(client_socket, password, strlen(password) + 1, 0)) < 0) {
+	if((send(client_socket, hashed_password, SHA256_DIGEST_LENGTH, 0)) < 0) {
 		perror("Errore nell'invio password");
 		return 1;
 	}
@@ -60,6 +64,7 @@ int sign_in(int client_socket){
 	char* request_type = SIGN_IN;
 	char _username[50];
 	char password[50];
+	unsigned char hashed_password[SHA256_DIGEST_LENGTH];
 
 	printf("*****************\n");
 	printf("Inserisci uno username: \n");
@@ -67,6 +72,8 @@ int sign_in(int client_socket){
 
 	printf("Inserisci una password: \n");
 	scanf("%49s", password);
+
+	hash_password(password, hashed_password);
 
 	// invio richiesta SIGN_IN
 	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
@@ -81,7 +88,7 @@ int sign_in(int client_socket){
 	}
 
 	// invio password
-	if((send(client_socket, password, strlen(password) + 1, 0)) < 0) {
+	if((send(client_socket, hashed_password, SHA256_DIGEST_LENGTH, 0)) < 0) {
 		perror("Errore nell'invio password");
 		return 1;
 	}

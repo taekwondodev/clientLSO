@@ -1,0 +1,1 @@
+void hash_password(const char *password, unsigned char *output_hash);

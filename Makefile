@@ -1,14 +1,22 @@
+TARGET = client
 CC = gcc
-CFLAGS = -Wall -Wextra -Ih
-SRC = main.c c/socket.c
+CFLAGS = -Wall -Wextra -I./h
+SRC = main.c c/socket.c c/hash.c c/client.c
+LIBS = -lssl -lcrypto
 OBJ = $(SRC:.c=.o)
 
-all: main.o
+all: $(TARGET)
 
-main.o: $(SRC)
-	$(CC) $(CFLAGS) $^ -o main.o
+# Regola per generare l'eseguibile
+$(TARGET): $(OBJ)
+	$(CC) $(OBJ) $(LIBS) -o $(TARGET)
 
+# Regola per compilare i file oggetto
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Pulizia dei file generati
 clean:
-	rm -f $(OBJ) main.o
+	rm -f $(OBJ) $(TARGET)
 
 .PHONY: all clean
