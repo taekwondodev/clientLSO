@@ -175,7 +175,9 @@ void search_menu(int client_socket) {
 	char* request_type = SEARCH;
 	char* request_type_option;
 	char search[50];
-	char buffer[BUFFER_SIZE];
+	char *response = NULL;
+	int total_bytes = 0;
+	char buffer[CHUNK_SIZE];
 
 	while(1) {
 		printf("------ Cerca ------\n");
@@ -221,23 +223,51 @@ void search_menu(int client_socket) {
 
 		printf("Caricamento...\n");
 
-		/// ricezione risposta
-		int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_received < 0) {
-            perror("Errore nella ricezione della risposta");
-            return;
-        }
-        buffer[bytes_received] = '\0'; // Per terminare la stringa al punto dove finisce
+		/// ricezione risposta a blocchi perchè non sappiamo la lunghezza
+		while(1) {
+			int bytes_received = recv(client_socket, buffer, CHUNK_SIZE - 1, 0);
+        	if (bytes_received < 0) {
+            	perror("Errore nella ricezione della risposta");
+				free(response);
+            	return;
+        	}
+			if (bytes_received == 0) {
+				break; // Connessione chiusa dal server
+			}
+
+			response = realloc(response, total_bytes + bytes_received + 1);
+			if (!response) {
+				perror("Errore nella realloc");
+				return;
+			}
+
+			memcpy(response + total_bytes, buffer, bytes_received);
+			total_bytes += bytes_received;
+			response[total_bytes] = '\0';
+
+			// Se la risposta è terminata, esci dal ciclo
+			if (strstr(response, TERMINATOR)) {
+				break;
+			}
+		}
+
+		// Rimuovi il terminatore dalla risposta
+		char *terminator_pos = strstr(response, TERMINATOR);
+		if (terminator_pos) {
+			*terminator_pos = '\0'; // Sostituisci il terminatore con il terminatore di stringa
+		}
 
 		// Parsing della risposta in JSON
         cJSON *json = cJSON_Parse(buffer);
         if (json == NULL) {
             printf("Errore nel parsing della risposta JSON\n");
+			free(response);
             return;
         }
 
 		printListofFilmJson(json);
 		cJSON_Delete(json); // Libera la memoria allocata per il JSON
+		free(response);
     }
 }
 

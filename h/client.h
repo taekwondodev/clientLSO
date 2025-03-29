@@ -1,4 +1,5 @@
-#define BUFFER_SIZE 1024
+#define CHUNK_SIZE 1024
+#define TERMINATOR "##END##"
 
 #define SIGN_UP "REGISTER"
 #define SIGN_IN "LOGIN"
