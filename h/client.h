@@ -1,3 +1,5 @@
+#define RENT_MAX 5
+
 #define SIGN_UP "REGISTER"
 #define SIGN_IN "LOGIN"
 #define SEARCH "SEARCH"
@@ -12,6 +14,10 @@ void welcome_menu(int client_socket);
 int sign_in(int client_socket);
 
 int sign_up(int client_socket);
+
+int rent(int client_socket, int film_id);
+
+int return_film(int client_socket, int film_id);
 
 void home_menu(int client_socket);
 
