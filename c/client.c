@@ -166,14 +166,45 @@ void home_menu(int client_socket) {
 	}
 }
 
+void return_menu(int client_socket) {
+	char* request_type = MY_RENTALS;
+	char *response = NULL;
+
+	printf("------ Restituisci ------\n");
+	printf("Scegli un film che hai noleggiato: \n");
+
+	if ((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
+		perror("Errore nell'invio richiesta");
+		return;
+	}
+
+	if ((send(client_socket, username, strlen(username) + 1, 0)) < 0) {
+		perror("Errore nell'invio username");
+		return;
+	}
+
+	printf("Caricamento...\n");
+
+	response = receive_long_data(client_socket);
+	if(!response) {
+		perror("Errore nella ricezione della risposta");
+		return;
+	}
+
+	cJSON *json = parse_json(response);
+    if (json) {
+        printListofFilmJson(json);
+        cJSON_Delete(json);
+    }
+    free(response);
+}
+
 void search_menu(int client_socket) {
 	int choice;
 	char* request_type = SEARCH;
 	char* request_type_option;
 	char search[50];
 	char *response = NULL;
-	int total_bytes = 0;
-	char buffer[CHUNK_SIZE];
 
 	while(1) {
 		printf("------ Cerca ------\n");
@@ -189,19 +220,16 @@ void search_menu(int client_socket) {
 				printf("Inserisci il titolo del film: \n");
 				scanf("%49s", search);
 				request_type_option = SEARCH_TITLE;
-				break;
 			case 2:
 				printf("Inserisci il genere del film: \n");
 				scanf("%49s", search);
 				request_type_option = SEARCH_GENRE;
-				break;
 			case 3:
 				return;
 			default:
 				printf("Valore non valido\n");
 		}
 
-		// invio richiesta SEARCH
 		if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
 			perror("Errore nell'invio richiesta");
 			return;
@@ -219,53 +247,22 @@ void search_menu(int client_socket) {
 
 		printf("Caricamento...\n");
 
-		/// ricezione risposta a blocchi perchè non sappiamo la lunghezza
-		while(1) {
-			int bytes_received = recv(client_socket, buffer, CHUNK_SIZE - 1, 0);
-        	if (bytes_received < 0) {
-            	perror("Errore nella ricezione della risposta");
-				free(response);
-            	return;
-        	}
-			if (bytes_received == 0) {
-				break; // Connessione chiusa dal server
-			}
-
-			response = realloc(response, total_bytes + bytes_received + 1);
-			if (!response) {
-				perror("Errore nella realloc");
-				return;
-			}
-
-			memcpy(response + total_bytes, buffer, bytes_received);
-			total_bytes += bytes_received;
-			response[total_bytes] = '\0';
-
-			// Se la risposta è terminata, esci dal ciclo
-			if (strstr(response, TERMINATOR)) {
-				break;
-			}
+		response = receive_long_data(client_socket);
+		if (!response) {
+			perror("Errore nella ricezione della risposta");
+			return;
 		}
 
-		// Rimuovi il terminatore dalla risposta
-		char *terminator_pos = strstr(response, TERMINATOR);
-		if (terminator_pos) {
-			*terminator_pos = '\0'; // Sostituisci il terminatore con il terminatore di stringa
+		cJSON *json = parse_json(response);
+		if (json) {
+			printListofFilmJson(json);
+			cJSON_Delete(json);
 		}
-
-		// Parsing della risposta in JSON
-        cJSON *json = cJSON_Parse(buffer);
-        if (json == NULL) {
-            printf("Errore nel parsing della risposta JSON\n");
-			free(response);
-            return;
-        }
-
-		printListofFilmJson(json);
-		cJSON_Delete(json); // Libera la memoria allocata per il JSON
 		free(response);
     }
 }
+
+/*******************************************************************************************/
 
 void printListofFilmJson(cJson *json) {
 	cJSON *film_list = json;
@@ -300,4 +297,13 @@ void printListofFilmJson(cJson *json) {
         }
         printf("\n");
     }
+}
+
+// Helper per parsing JSON
+cJSON* parse_json(const char *data) {
+    cJSON *json = cJSON_Parse(data);
+    if (json == NULL) {
+        printf("Errore nel parsing della risposta JSON\n");
+    }
+    return json;
 }

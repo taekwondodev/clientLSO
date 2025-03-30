@@ -29,3 +29,52 @@ void connection_to_server(int client_socket, struct sockaddr_un *server_addr) {
 
 	printf("------- Benvenuto nella videoteca! -------\n");
 }
+
+bool send_data(int client_socket, const void *data, size_t data_size) {
+	if (send(socket, data, size, 0) < 0) {
+        perror("Errore nell'invio dati");
+        return false;
+    }
+    return true;
+}
+
+char* receive_long_data(int socket) {
+    char buffer[CHUNK_SIZE];
+    char *response = NULL;
+    int total_bytes = 0;
+
+    while (1) {
+        int bytes_received = recv(socket, buffer, CHUNK_SIZE - 1, 0);
+        if (bytes_received < 0) {
+            perror("Errore nella ricezione della risposta");
+            free(response);
+            return NULL;
+        }
+        if (bytes_received == 0) {
+            break; // Connessione chiusa dal server
+        }
+
+        response = realloc(response, total_bytes + bytes_received + 1);
+        if (!response) {
+            perror("Errore nella realloc");
+            return NULL;
+        }
+
+        memcpy(response + total_bytes, buffer, bytes_received);
+        total_bytes += bytes_received;
+        response[total_bytes] = '\0';
+
+		// Se la risposta è terminata, esci dal ciclo
+        if (strstr(response, TERMINATOR)) {
+            break;
+        }
+    }
+
+	// Rimuovi il terminatore dalla risposta
+    char *terminator_pos = strstr(response, TERMINATOR);
+    if (terminator_pos) {
+        *terminator_pos = '\0';
+    }
+
+    return response;
+}

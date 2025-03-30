@@ -1,6 +1,3 @@
-#define CHUNK_SIZE 1024
-#define TERMINATOR "##END##"
-
 #define SIGN_UP "REGISTER"
 #define SIGN_IN "LOGIN"
 #define SEARCH "SEARCH"
@@ -19,3 +16,5 @@ int sign_up(int client_socket);
 void home_menu(int client_socket);
 
 void search_menu(int client_socket);
+
+void return_menu(int client_socket);
