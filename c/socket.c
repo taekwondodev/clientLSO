@@ -30,8 +30,8 @@ void connection_to_server(int client_socket, struct sockaddr_un *server_addr) {
 	printf("------- Benvenuto nella videoteca! -------\n");
 }
 
-bool send_data(int client_socket, const void *data, size_t data_size) {
-	if (send(socket, data, size, 0) < 0) {
+bool send_data(int client_socket, const void *data, size_t size) {
+	if (send(client_socket, data, size, 0) < 0) {
         perror("Errore nell'invio dati");
         return false;
     }

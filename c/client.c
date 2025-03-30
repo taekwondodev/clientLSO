@@ -1,4 +1,5 @@
 #include "../h/client.h"
+#include "../h/socket.h"
 #include "../h/hash.h"
 
 #include <stdio.h>
@@ -12,7 +13,7 @@ static char username[50];
 
 int sign_up(int client_socket) {
 	int result;
-	char* request_type = SIGN_UP;
+	char *request_type = SIGN_UP;
 	char _username[50];
 	char password[50];
 	unsigned char hashed_password[SHA256_DIGEST_LENGTH];
@@ -62,7 +63,7 @@ int sign_up(int client_socket) {
 
 int sign_in(int client_socket){
 	int result;
-	char* request_type = SIGN_IN;
+	char *request_type = SIGN_IN;
 	char _username[50];
 	char password[50];
 	unsigned char hashed_password[SHA256_DIGEST_LENGTH];
@@ -167,7 +168,7 @@ void home_menu(int client_socket) {
 }
 
 void return_menu(int client_socket) {
-	char* request_type = MY_RENTALS;
+	char *request_type = MY_RENTALS;
 	char *response = NULL;
 
 	printf("------ Restituisci ------\n");
@@ -201,8 +202,8 @@ void return_menu(int client_socket) {
 
 void search_menu(int client_socket) {
 	int choice;
-	char* request_type = SEARCH;
-	char* request_type_option;
+	char *request_type = SEARCH;
+	char *request_type_option;
 	char search[50];
 	char *response = NULL;
 
