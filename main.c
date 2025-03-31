@@ -20,7 +20,7 @@ int main() {
 	signal(SIGINT, sig_handler);
 	signal(SIGTERM, sig_handler);
 
-	struct sockaddr_un server_addr;
+	struct sockaddr_in server_addr;
 
 	sock = open_socket();
 	setup_server_address(&server_addr);
