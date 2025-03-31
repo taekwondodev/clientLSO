@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 int open_socket() {
 	int sock;
@@ -17,8 +18,8 @@ int open_socket() {
 
 void setup_server_address(struct sockaddr_in *server_addr) {
     server_addr->sin_family = AF_INET;
-    server_addr->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     server_addr->sin_port = htons(PORT);
+    server_addr->sin_addr.s_addr = inet_addr(IP);
 }
 
 void connection_to_server(int client_socket, struct sockaddr_in *server_addr) {
