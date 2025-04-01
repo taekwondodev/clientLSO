@@ -13,7 +13,7 @@
 static char username[50];
 
 int sign_up(int client_socket) {
-	int result;
+	char result[256];
 	char *request_type = SIGN_UP;
 	char _username[50];
 	char password[50];
@@ -28,19 +28,16 @@ int sign_up(int client_socket) {
 
 	hash_password(password, hashed_password);
 
-	// invio richiesta SIGN_UP
 	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
 		perror("Errore nell'invio richiesta");
 		return 1;
 	}
 
-	// invio username
 	if((send(client_socket, _username, strlen(_username) + 1, 0)) < 0) {
 		perror("Errore nell'invio username");
 		return 1;
 	}
 
-	// invio password
 	if((send(client_socket, hashed_password, SHA256_DIGEST_LENGTH, 0)) < 0) {
 		perror("Errore nell'invio password");
 		return 1;
@@ -48,13 +45,12 @@ int sign_up(int client_socket) {
 
 	printf("Caricamento...\n");
 
-	// ricevuta risposta
-	recv(client_socket, &result, sizeof(result), 0);
+	recv(client_socket, result, sizeof(result), 0);
 
-	if(result == 0) {
+	if(strcmp(result, "successo") == 0) {
 		printf("Registrazione avvenuta con successo!");
 		strcpy(username, _username);
-		return result;
+		return 0;
 	}
 	else {
 		perror("Errore nel ricevere il messaggio");
@@ -63,7 +59,7 @@ int sign_up(int client_socket) {
 }
 
 int sign_in(int client_socket){
-	int result;
+	char result[256];
 	char *request_type = SIGN_IN;
 	char _username[50];
 	char password[50];
@@ -78,19 +74,16 @@ int sign_in(int client_socket){
 
 	hash_password(password, hashed_password);
 
-	// invio richiesta SIGN_IN
 	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
 		perror("Errore nell'invio richiesta");
 		return 1;
 	}
 
-	// invio username
 	if((send(client_socket, _username, strlen(_username) + 1, 0)) < 0) {
 		perror("Errore nell'invio username");
 		return 1;
 	}
 
-	// invio password
 	if((send(client_socket, hashed_password, SHA256_DIGEST_LENGTH, 0)) < 0) {
 		perror("Errore nell'invio password");
 		return 1;
@@ -98,13 +91,12 @@ int sign_in(int client_socket){
 
 	printf("Caricamento...\n");
 
-	// ricevuta risposta
-	recv(client_socket, &result, sizeof(result), 0);
+	recv(client_socket, result, sizeof(result), 0);
 
-	if(result == 0) {
+	if(strcmp(result, "effettuato") == 0) {
 		printf("Login avvenuto con successo!");
 		strcpy(username, _username);
-		return result;
+		return 0;
 	}
 	else {
 		perror("Errore nel ricevere il messaggio");
@@ -144,7 +136,7 @@ int rent(int client_socket, int film_id) {
 	recv(client_socket, &result, sizeof(result), 0);
 	if(result == 0) {
 		printf("Noleggio avvenuto con successo!");
-		return result;
+		return 0;
 	}
 	else {
 		perror("Errore nel ricevere il messaggio");
@@ -178,7 +170,7 @@ int return_film(int client_socket, int film_id){
 	recv(client_socket, &result, sizeof(result), 0);
 	if(result == 0) {
 		printf("Restituzione avvenuta con successo!");
-		return result;
+		return 0;
 	}
 	else {
 		perror("Errore nel ricevere il messaggio");
@@ -201,10 +193,10 @@ void welcome_menu(int client_socket) {
 		switch(choice) {
 			case 1:
 				if(sign_up(client_socket) == 0)
-					return;
+					break;
 			case 2:
 				if(sign_in(client_socket) == 0)
-					return;
+					break;
 			case 3:
 				close(client_socket);
 				exit(EXIT_SUCCESS);
@@ -300,7 +292,7 @@ void search_menu(int client_socket) {
 				scanf("%49s", search);
 				request_type_option = SEARCH_GENRE;
 			case 3:
-				return;
+				break;
 			default:
 				printf("Valore non valido\n");
 		}
@@ -402,7 +394,7 @@ void return_operation(int index, cJSON *film_list, cJSON *film) {
 			cJSON_ArrayForEach(film, film_list) {
 				if (current_index == selected_index) {
 					cJSON *film_id = cJSON_GetObjectItem(film, "film_id");
-					return_film(client_socket, film_id->valueint);
+					result = return_film(client_socket, film_id->valueint);
 					break;
 				}
 				current_index++;
@@ -427,6 +419,7 @@ void rent_operation(int index, cJSON *film_list, cJSON *film) {
 		// controllo se il carrello è pieno, se si direttamente checkout
 		if (cart_size >= RENT_MAX) {
 			checkout(client_socket, cart_size, cart);
+			break;
 		}
 		
 		printf("Vuoi noleggiare un film? Inserisci l'indice del film: \n");
@@ -463,13 +456,25 @@ void rent_operation(int index, cJSON *film_list, cJSON *film) {
 }
 
 void checkout(int client_socket, int cart_size, int *cart) {
+	int choice;
+
+	printf("------ Checkout ------\n");
+	printf("Sei sicuro di voler noleggiare i film selezionati? \n");
+	printf("1) Per confermare \n");
+	printf("2) Per annullare \n");
+	scanf("%d", &choice);
+
+	if (choice != 1) {
+		printf("Operazione annullata. Torno al menu precedente.\n");
+		return;
+	}
+
 	printf("Effettuando il checkout per i seguenti film:\n");
     for (int i = 0; i < cart_size; i++) {
         printf("Film ID: %d\n", cart[i]);
         rent(client_socket, cart[i]);
     }
     printf("Operazione completata. Torno al menu precedente.\n");
-    break;
 }
 
 // Helper per parsing JSON
