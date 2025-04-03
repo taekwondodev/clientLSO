@@ -8,7 +8,7 @@
 int open_socket() {
 	int sock;
 
-	if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+	if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("Errore creazione socket");
 		exit(EXIT_FAILURE);
 	}

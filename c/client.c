@@ -8,16 +8,18 @@
 #include <string.h>
 #include <time.h>
 #include <sys/socket.h>
+#include <openssl/sha.h>
 #include <cjson/cJSON.h>
 
 static char username[50];
 
 int sign_up(int client_socket) {
 	char result[256];
-	char *request_type = SIGN_UP;
+	char request[512];
 	char _username[50];
 	char password[50];
 	unsigned char hashed_password[SHA256_DIGEST_LENGTH];
+	char hashed_password_hex[2*SHA256_DIGEST_LENGTH + 1] = {0}; 
 
 	printf("*****************\n");
 	printf("Inserisci uno username: \n");
@@ -27,20 +29,16 @@ int sign_up(int client_socket) {
 	scanf("%49s", password);
 
 	hash_password(password, hashed_password);
+	// Converti l'hash binario in stringa esadecimale
+    	for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        	sprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
+    	}
 
-	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
-		perror("Errore nell'invio richiesta");
-		return 1;
-	}
+	snprintf(request, sizeof(request), "%s|%s|%s\n", SIGN_UP, _username, hashed_password_hex); 	
 
-	if((send(client_socket, _username, strlen(_username) + 1, 0)) < 0) {
-		perror("Errore nell'invio username");
-		return 1;
-	}
-
-	if((send(client_socket, hashed_password, SHA256_DIGEST_LENGTH, 0)) < 0) {
-		perror("Errore nell'invio password");
-		return 1;
+	if (send(client_socket, request, strlen(request), 0) < 0) {
+        	perror("Errore nell'invio richiesta");
+       		return 1;
 	}
 
 	printf("Caricamento...\n");
@@ -53,17 +51,19 @@ int sign_up(int client_socket) {
 		return 0;
 	}
 	else {
-		perror("Errore nel ricevere il messaggio");
+		printf("Errore nel ricevere il messaggio");
 		return 1;
 	}
 }
 
 int sign_in(int client_socket){
 	char result[256];
-	char *request_type = SIGN_IN;
+	char request[256];
 	char _username[50];
 	char password[50];
 	unsigned char hashed_password[SHA256_DIGEST_LENGTH];
+	char hashed_password_hex[2*SHA256_DIGEST_LENGTH + 1] = {0};
+
 
 	printf("*****************\n");
 	printf("Inserisci uno username: \n");
@@ -73,20 +73,16 @@ int sign_in(int client_socket){
 	scanf("%49s", password);
 
 	hash_password(password, hashed_password);
+	// Converti l'hash binario in stringa esadecimale
+    	for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+       		sprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
+   	}
 
-	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
-		perror("Errore nell'invio richiesta");
-		return 1;
-	}
+	snprintf(request, sizeof(request), "%s|%s|%s\n", SIGN_IN, _username, hashed_password_hex);
 
-	if((send(client_socket, _username, strlen(_username) + 1, 0)) < 0) {
-		perror("Errore nell'invio username");
-		return 1;
-	}
-
-	if((send(client_socket, hashed_password, SHA256_DIGEST_LENGTH, 0)) < 0) {
-		perror("Errore nell'invio password");
-		return 1;
+	if (send(client_socket, request, strlen(request), 0) < 0) {
+        	perror("Errore nell'invio richiesta");
+        	return 1;
 	}
 
 	printf("Caricamento...\n");
@@ -99,78 +95,69 @@ int sign_in(int client_socket){
 		return 0;
 	}
 	else {
-		perror("Errore nel ricevere il messaggio");
+		printf("Errore nel ricevere il messaggio");
 		return 1;
 	}
 }
 
 int rent(int client_socket, int film_id) {
-	int result;
-	char *request_type = RENT;
+	char result[256];
+	char request[256];
+
 	time_t timestamp = time(NULL);
+	char return_date[11];
+	struct tm *tm_info = localtime(&timestamp);
+	strftime(return_date, sizeof(return_date), "%Y-%m-%d", tm_info);
 
 	printf("Noleggio del film con ID: %d\n", film_id);
 
-	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
-		perror("Errore nell'invio richiesta");
-		return 1;
-	}
+	snprintf(request, sizeof(request), "%s|%s|%d|%s\n", RENT, username, film_id, return_date); 
 
-	if((send(client_socket, username, strlen(username) + 1, 0)) < 0) {
-		perror("Errore nell'invio username");
-		return 1;
-	}
-
-	if((send(client_socket, &film_id, sizeof(film_id), 0)) < 0) {
-		perror("Errore nell'invio film_id");
-		return 1;
-	}
-
-	if((send(client_socket, &timestamp, sizeof(timestamp), 0)) < 0) {
-		perror("Errore nell'invio timestamp");
-		return 1;
+	if (send(client_socket, request, strlen(request), 0) < 0) {
+        	perror("Errore nell'invio della richiesta");
+        	return 1;
 	}
 
 	printf("Caricamento...\n");
 
-	recv(client_socket, &result, sizeof(result), 0);
-	if(result == 0) {
+	recv(client_socket, result, sizeof(result), 0);
+	if(strcmp(result, "successo") == 0) {
 		printf("Noleggio avvenuto con successo!");
 		return 0;
 	}
+	else if (strcmp(result, "Nessuna") == 0){
+		printf("Nessuna copia disponibile");
+		return 1;
+	}
 	else {
-		perror("Errore nel ricevere il messaggio");
+		printf("Errore risposta server");
 		return 1;
 	}
 }
 
 int return_film(int client_socket, int film_id){
-	int result;
-	char *request_type = RETURN;
+	char result[256];
+	char request[256];
 
 	printf("Restituzione del film con ID: %d\n", film_id);
 
-	if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
-		perror("Errore nell'invio richiesta");
-		return 1;
-	}
+	snprintf(request, sizeof(result), "%s|%s|%d\n", RETURN, username, film_id);
 
-	if((send(client_socket, username, strlen(username) + 1, 0)) < 0) {
-		perror("Errore nell'invio username");
-		return 1;
-	}
-
-	if((send(client_socket, &film_id, sizeof(film_id), 0)) < 0) {
-		perror("Errore nell'invio film_id");
-		return 1;
+	if (send(client_socket, request, strlen(request), 0) < 0) {
+        	perror("Errore nell'invio della richiesta");
+        	return 1;
 	}
 
 	printf("Caricamento...\n");
 
-	recv(client_socket, &result, sizeof(result), 0);
-	if(result == 0) {
+	recv(client_socket, result, sizeof(result), 0);
+	if(strcmp(result, "successo") == 0) {
 		printf("Restituzione avvenuta con successo!");
 		return 0;
+	}
+	else if(strcmp(result, "non trovato") == 0){
+		printf("Film non trovato");
+		return 1;
 	}
 	else {
 		perror("Errore nel ricevere il messaggio");
@@ -234,148 +221,16 @@ void home_menu(int client_socket) {
 	}
 }
 
-void return_menu(int client_socket) {
-	char *request_type = MY_RENTALS;
-	char *response = NULL;
-
-	printf("------ Restituisci ------\n");
-
-	if ((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
-		perror("Errore nell'invio richiesta");
-		return;
-	}
-
-	if ((send(client_socket, username, strlen(username) + 1, 0)) < 0) {
-		perror("Errore nell'invio username");
-		return;
-	}
-
-	printf("Caricamento...\n");
-
-	response = receive_long_data(client_socket);
-	if(!response) {
-		perror("Errore nella ricezione della risposta");
-		return;
-	}
-
-	cJSON *json = parse_json(response);
-    if (json) {
-        printListofFilmJson(json, true);
-        cJSON_Delete(json);
+// Helper per parsing JSON
+cJSON* parse_json(const char *data) {
+    cJSON *json = cJSON_Parse(data);
+    if (json == NULL) {
+        printf("Errore nel parsing della risposta JSON\n");
     }
-    free(response);
+    return json;
 }
 
-void search_menu(int client_socket) {
-	int choice;
-	char *request_type = SEARCH;
-	char *request_type_option;
-	char search[50];
-	char *response = NULL;
-
-	while(1) {
-		printf("------ Cerca ------\n");
-		printf("Scegli un opzione: \n");
-		printf("1) Cerca per titolo \n");
-		printf("2) Cerca per genere \n");
-		printf("3) Torna indietro \n");
-
-		scanf("%d", &choice);
-
-		switch(choice) {
-			case 1:
-				printf("Inserisci il titolo del film: \n");
-				scanf("%49s", search);
-				request_type_option = SEARCH_TITLE;
-			case 2:
-				printf("Inserisci il genere del film: \n");
-				scanf("%49s", search);
-				request_type_option = SEARCH_GENRE;
-			case 3:
-				break;
-			default:
-				printf("Valore non valido\n");
-		}
-
-		if((send(client_socket, request_type, strlen(request_type) + 1, 0)) < 0) {
-			perror("Errore nell'invio richiesta");
-			return;
-		}
-
-		if((send(client_socket, request_type_option, strlen(request_type_option) + 1, 0)) < 0) {
-			perror("Errore nell'invio opzione");
-			return;
-		}
-
-		if((send(client_socket, search, strlen(search) + 1, 0)) < 0) {
-			perror("Errore nell'invio ricerca");
-			return;
-		}
-
-		printf("Caricamento...\n");
-
-		response = receive_long_data(client_socket);
-		if (!response) {
-			perror("Errore nella ricezione della risposta");
-			return;
-		}
-
-		cJSON *json = parse_json(response);
-		if (json) {
-			printListofFilmJson(json, false);
-			cJSON_Delete(json);
-		}
-		free(response);
-    }
-}
-
-/*******************************************************************************************/
-
-void printListofFilmJson(cJson *json, bool isReturn) {
-	cJSON *film_list = json;
-    cJSON *film;
-	int index = 1;
-
-    cJSON_ArrayForEach(film, film_list) {
-        cJSON *film_id = cJSON_GetObjectItem(film, "film_id");
-        cJSON *titolo = cJSON_GetObjectItem(film, "titolo");
-        cJSON *genere = cJSON_GetObjectItem(film, "genere");
-        cJSON *copie_totali = cJSON_GetObjectItem(film, "copie_totali");
-        cJSON *copie_disponibili = cJSON_GetObjectItem(film, "copie_disponibili");
-
-        printf("[%d] Film ID: %d\n", index, film_id->valueint);
-        printf("Titolo: %s\n", titolo->valuestring);
-        printf("Genere: %s\n", genere->valuestring);
-        printf("Copie Totali: %d\n", copie_totali->valueint);
-        printf("Copie Disponibili: %d\n", copie_disponibili->valueint);
-
-        // Iterazione sui prestiti
-        cJSON *prestiti = cJSON_GetObjectItem(film, "prestiti");
-        if (cJSON_IsArray(prestiti)) {
-            cJSON *prestito;
-            cJSON_ArrayForEach(prestito, prestiti) {
-                cJSON *user_id = cJSON_GetObjectItem(prestito, "user_id");
-                cJSON *timestamp = cJSON_GetObjectItem(prestito, "timestamp");
-                cJSON *due_date = cJSON_GetObjectItem(prestito, "due_date");
-
-                printf("  Prestito:\n");
-                printf("    User ID: %s\n", user_id->valuestring);
-                printf("    Timestamp: %ld\n", timestamp->valuedouble);
-                printf("    Due Date: %s\n", due_date->valuestring);
-            }
-        }
-        printf("\n");
-		index++;
-    }
-
-	if (isReturn) {
-		return_operation(index, film_list, film);
-	} else {
-		rent_operation(index, film_list, film);
-	}
-}
-
-void return_operation(int index, cJSON *film_list, cJSON *film) {
+void return_operation(int index, cJSON *film_list, cJSON *film, int client_socket) {
 	int selected_index;
 
 	while(1) {
@@ -410,7 +265,29 @@ void return_operation(int index, cJSON *film_list, cJSON *film) {
 	}
 }
 
-void rent_operation(int index, cJSON *film_list, cJSON *film) {
+void checkout(int client_socket, int cart_size, int *cart) {
+	int choice;
+
+	printf("------ Checkout ------\n");
+	printf("Sei sicuro di voler noleggiare i film selezionati? \n");
+	printf("1) Per confermare \n");
+	printf("2) Per annullare \n");
+	scanf("%d", &choice);
+
+	if (choice != 1) {
+		printf("Operazione annullata. Torno al menu precedente.\n");
+		return;
+	}
+
+	printf("Effettuando il checkout per i seguenti film:\n");
+    for (int i = 0; i < cart_size; i++) {
+        printf("Film ID: %d\n", cart[i]);
+        rent(client_socket, cart[i]);
+    }
+    printf("Operazione completata. Torno al menu precedente.\n");
+}
+
+void rent_operation(int index, cJSON *film_list, cJSON *film, int client_socket) {
     int selected_index;
 	int cart[RENT_MAX];
 	int cart_size = 0;
@@ -455,33 +332,148 @@ void rent_operation(int index, cJSON *film_list, cJSON *film) {
 	}
 }
 
-void checkout(int client_socket, int cart_size, int *cart) {
-	int choice;
+void printListofFilmJson(cJSON *json, bool isReturn, int client_socket) {
+	cJSON *film_list = json;
+    cJSON *film;
+	int index = 1;
 
-	printf("------ Checkout ------\n");
-	printf("Sei sicuro di voler noleggiare i film selezionati? \n");
-	printf("1) Per confermare \n");
-	printf("2) Per annullare \n");
-	scanf("%d", &choice);
+    cJSON_ArrayForEach(film, film_list) {
+        cJSON *film_id = cJSON_GetObjectItem(film, "film_id");
+        cJSON *titolo = cJSON_GetObjectItem(film, "titolo");
+        cJSON *genere = cJSON_GetObjectItem(film, "genere");
+        cJSON *copie_totali = cJSON_GetObjectItem(film, "copie_totali");
+        cJSON *copie_disponibili = cJSON_GetObjectItem(film, "copie_disponibili");
 
-	if (choice != 1) {
-		printf("Operazione annullata. Torno al menu precedente.\n");
+        printf("[%d] Film ID: %d\n", index, film_id->valueint);
+        printf("Titolo: %s\n", titolo->valuestring);
+        printf("Genere: %s\n", genere->valuestring);
+        printf("Copie Totali: %d\n", copie_totali->valueint);
+        printf("Copie Disponibili: %d\n", copie_disponibili->valueint);
+
+        // Iterazione sui prestiti
+        cJSON *prestiti = cJSON_GetObjectItem(film, "prestiti");
+        if (cJSON_IsArray(prestiti)) {
+            cJSON *prestito;
+            cJSON_ArrayForEach(prestito, prestiti) {
+                cJSON *user_id = cJSON_GetObjectItem(prestito, "user_id");
+                cJSON *timestamp = cJSON_GetObjectItem(prestito, "timestamp");
+                cJSON *due_date = cJSON_GetObjectItem(prestito, "due_date");
+
+                printf("  Prestito:\n");
+                printf("    User ID: %s\n", user_id->valuestring);
+                printf("    Timestamp: %s\n", timestamp->valuestring);
+                printf("    Due Date: %s\n", due_date->valuestring);
+            }
+        }
+        printf("\n");
+		index++;
+    }
+
+	if (isReturn) {
+		return_operation(index, film_list, film, client_socket);
+	} else {
+		rent_operation(index, film_list, film, client_socket);
+	}
+}
+
+void return_menu(int client_socket) {
+	char request[256];
+	char *response = NULL;
+
+	printf("------ Restituisci ------\n");
+
+	snprintf(request, sizeof(request), "%s|%s\n", MY_RENTALS, username);
+
+	if (send(client_socket, request, strlen(request), 0) < 0) {
+        	perror("Errore nell'invio della richiesta");
+        	return;
+	}
+	
+	printf("Caricamento...\n");
+
+	response = receive_long_data(client_socket);
+	if(!response) {
+		perror("Errore nella ricezione della risposta");
 		return;
 	}
 
-	printf("Effettuando il checkout per i seguenti film:\n");
-    for (int i = 0; i < cart_size; i++) {
-        printf("Film ID: %d\n", cart[i]);
-        rent(client_socket, cart[i]);
-    }
-    printf("Operazione completata. Torno al menu precedente.\n");
+	// Controlla se la risposta inizia con '{' o '[' per determinare se è JSON
+    	if (response[0] == '{' || response[0] == '[') {
+        	cJSON *json = parse_json(response);
+        	if (json) {
+            		printListofFilmJson(json, true, client_socket);
+           		 cJSON_Delete(json);
+        	} else {
+           		printf("Errore nel parsing della risposta JSON.\n");
+        	}
+    	} else {
+        	// Se non è JSON, stampiamo il messaggio di errore ricevuto
+        	printf("Errore ricevuto dal server: %s\n", response);
+   	}
+
+	free(response);
 }
 
-// Helper per parsing JSON
-cJSON* parse_json(const char *data) {
-    cJSON *json = cJSON_Parse(data);
-    if (json == NULL) {
-        printf("Errore nel parsing della risposta JSON\n");
+void search_menu(int client_socket) {
+	int choice;
+	char request[256];
+	char *request_type_option;
+	char search[50];
+	char *response = NULL;
+
+	while(1) {
+		printf("------ Cerca ------\n");
+		printf("Scegli un opzione: \n");
+		printf("1) Cerca per titolo \n");
+		printf("2) Cerca per genere \n");
+		printf("3) Torna indietro \n");
+
+		scanf("%d", &choice);
+
+		switch(choice) {
+			case 1:
+				printf("Inserisci il titolo del film: \n");
+				scanf("%49s", search);
+				request_type_option = SEARCH_TITLE;
+			case 2:
+				printf("Inserisci il genere del film: \n");
+				scanf("%49s", search);
+				request_type_option = SEARCH_GENRE;
+			case 3:
+				break;
+			default:
+				printf("Valore non valido\n");
+		}
+
+		snprintf(request, sizeof(request), "%s|%s|%s\n", SEARCH, request_type_option, search);
+
+		if (send(client_socket, request, strlen(request), 0) < 0) {
+        		perror("Errore nell'invio della richiesta");
+       			return;
+		}
+
+		printf("Caricamento...\n");
+
+		response = receive_long_data(client_socket);
+		if (!response) {
+			perror("Errore nella ricezione della risposta");
+			return;
+		}
+
+		// Controlla se la risposta inizia con '{' o '[' per determinare se è JSON
+    		if (response[0] == '{' || response[0] == '[') {
+        		cJSON *json = parse_json(response);
+        		if (json) {
+            			printListofFilmJson(json, false, client_socket);
+           			cJSON_Delete(json);
+        		} else {
+            			printf("Errore nel parsing della risposta JSON.\n");
+       			}
+    		} else {
+        		// Se non è JSON, stampiamo il messaggio di errore ricevuto
+        		printf("Errore ricevuto dal server: %s\n", response);
+    		}
+
+		free(response);
     }
-    return json;
 }

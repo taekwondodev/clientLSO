@@ -1,10 +1,14 @@
 #include "../h/hash.h"
 
-#include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <string.h>
 
 void hash_password(const char *password, unsigned char *output_hash) {
-    SHA256_CTX sha256_ctx;
-    SHA256_Init(&sha256_ctx);
-    SHA256_Update(&sha256_ctx, password, strlen(password));
-    SHA256_Final(output_hash, &sha256_ctx);
+   EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+   const EVP_MD *md = EVP_sha256();
+    
+    EVP_DigestInit_ex(mdctx, md, NULL);
+    EVP_DigestUpdate(mdctx, password, strlen(password));
+    EVP_DigestFinal_ex(mdctx, output_hash, NULL);
+    EVP_MD_CTX_free(mdctx); 
 }
