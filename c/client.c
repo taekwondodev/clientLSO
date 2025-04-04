@@ -31,7 +31,7 @@ int sign_up(int client_socket) {
 	hash_password(password, hashed_password);
 	// Converti l'hash binario in stringa esadecimale
     	for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        	sprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
+        	snprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
     	}
 
 	snprintf(request, sizeof(request), "%s|%s|%s\n", SIGN_UP, _username, hashed_password_hex); 	
@@ -75,7 +75,7 @@ int sign_in(int client_socket){
 	hash_password(password, hashed_password);
 	// Converti l'hash binario in stringa esadecimale
     	for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-       		sprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
+       		snprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
    	}
 
 	snprintf(request, sizeof(request), "%s|%s|%s\n", SIGN_IN, _username, hashed_password_hex);
@@ -180,16 +180,18 @@ void welcome_menu(int client_socket) {
 		switch(choice) {
 			case 1:
 				if(sign_up(client_socket) == 0)
-					break;
+					return;
+				break;
 			case 2:
 				if(sign_in(client_socket) == 0)
-					break;
+					return;
+				break;
 			case 3:
 				close(client_socket);
 				exit(EXIT_SUCCESS);
-				break;
 			default:
 				printf("Valore non valido\n");
+				break;
 		}
 	}
 }
@@ -209,8 +211,10 @@ void home_menu(int client_socket) {
 		switch(choice) {
 			case 1:
 				search_menu(client_socket);
+				break;
 			case 2:
 				return_menu(client_socket);
+				break;
 			case 3:
 				close(client_socket);
 				exit(EXIT_SUCCESS);
@@ -402,7 +406,7 @@ void return_menu(int client_socket) {
         	cJSON *json = parse_json(response);
         	if (json) {
             		printListofFilmJson(json, true, client_socket);
-           		 cJSON_Delete(json);
+           		    cJSON_Delete(json);
         	} else {
            		printf("Errore nel parsing della risposta JSON.\n");
         	}
@@ -412,6 +416,7 @@ void return_menu(int client_socket) {
    	}
 
 	free(response);
+	response = NULL;
 }
 
 void search_menu(int client_socket) {
@@ -430,19 +435,26 @@ void search_menu(int client_socket) {
 
 		scanf("%d", &choice);
 
+		// Reset search and request_type_option for each iteration
+        memset(search, 0, sizeof(search));
+        request_type_option = NULL;
+
 		switch(choice) {
 			case 1:
 				printf("Inserisci il titolo del film: \n");
 				scanf("%49s", search);
 				request_type_option = SEARCH_TITLE;
+				break;
 			case 2:
 				printf("Inserisci il genere del film: \n");
 				scanf("%49s", search);
 				request_type_option = SEARCH_GENRE;
-			case 3:
 				break;
+			case 3:
+				return;
 			default:
 				printf("Valore non valido\n");
+				continue;
 		}
 
 		snprintf(request, sizeof(request), "%s|%s|%s\n", SEARCH, request_type_option, search);
@@ -475,5 +487,6 @@ void search_menu(int client_socket) {
     		}
 
 		free(response);
+		response = NULL;
     }
 }
