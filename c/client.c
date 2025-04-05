@@ -418,6 +418,7 @@ void search_menu(int client_socket) {
 		printf("3) Torna indietro \n");
 
 		scanf("%d", &choice);
+		while(getchar() != '\n'); // Pulisce il buffer di input
 
 		// Reset search and request_type_option for each iteration
         memset(search, 0, sizeof(search));
