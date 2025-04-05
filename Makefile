@@ -2,7 +2,7 @@ TARGET = client
 CC = gcc
 CFLAGS = -Wall -Wextra -I./h
 SRC = main.c c/socket.c c/hash.c c/client.c
-LIBS = -lssl -lcrypto -lcjson
+LIBS = -lssl -lcrypto
 OBJ = $(SRC:.c=.o)
 
 all: $(TARGET)
