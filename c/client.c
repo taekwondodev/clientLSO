@@ -426,12 +426,14 @@ void search_menu(int client_socket) {
 		switch(choice) {
 			case 1:
 				printf("Inserisci il titolo del film: \n");
-				scanf("%49s", search);
+				fgets(search, sizeof(search), stdin);
+				search[strcspn(search, "\n")] = '\0'; // Rimuove il carattere di newline
 				request_type_option = SEARCH_TITLE;
 				break;
 			case 2:
 				printf("Inserisci il genere del film: \n");
-				scanf("%49s", search);
+				fgets(search, sizeof(search), stdin);
+				search[strcspn(search, "\n")] = '\0'; // Rimuove il carattere di newline
 				request_type_option = SEARCH_GENRE;
 				break;
 			case 3:
@@ -444,8 +446,8 @@ void search_menu(int client_socket) {
 		snprintf(request, sizeof(request), "%s|%s|%s\n", SEARCH, request_type_option, search);
 
 		if (send(client_socket, request, strlen(request), 0) < 0) {
-        		perror("Errore nell'invio della richiesta\n");
-       			return;
+        	perror("Errore nell'invio della richiesta\n");
+       		return;
 		}
 
 		printf("Caricamento...\n");
