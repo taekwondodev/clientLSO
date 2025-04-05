@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 #include <sys/socket.h>
 #include <openssl/sha.h>
 
@@ -133,13 +134,30 @@ int sign_in(int client_socket){
 
 int rent(int client_socket, int film_id) {
 	char request[256];
-
-	time_t timestamp = time(NULL);
 	char return_date[11];
-	struct tm *tm_info = localtime(&timestamp);
-	strftime(return_date, sizeof(return_date), "%Y-%m-%d", tm_info);
+	int valid_date = 0;
 
 	printf("Noleggio del film con ID: %d\n", film_id);
+
+	while(!valid_date){
+		printf("Inserisci la data di restituzione (YYYY-MM-DD): ");
+        if (fgets(return_date, sizeof(return_date), stdin)) {
+            return_date[strcspn(return_date, "\n")] = '\0'; // Rimuove newline
+            
+            // Validazione semplice del formato
+            if (strlen(return_date) == 10 &&
+                return_date[4] == '-' && return_date[7] == '-' &&
+                isdigit(return_date[0]) && isdigit(return_date[1]) &&
+                isdigit(return_date[2]) && isdigit(return_date[3]) &&
+                isdigit(return_date[5]) && isdigit(return_date[6]) &&
+                isdigit(return_date[8]) && isdigit(return_date[9])) {
+                
+                valid_date = 1;
+            } else {
+                printf("Formato data non valido. Usa YYYY-MM-DD\n");
+            }
+        }
+	}
 
 	snprintf(request, sizeof(request), "%s|%s|%d|%s\n", RENT, username, film_id, return_date); 
 
@@ -317,6 +335,7 @@ void checkout(int client_socket, int *cart_size, int *cart) {
 	printf("1) Per confermare \n");
 	printf("0) Per annullare \n");
 	scanf("%d", &choice);
+	while(getchar() != '\n'); // Pulisce il buffer di input
 
 	if (choice != 1) {
 		printf("Operazione annullata. Torno al menu precedente.\n");
