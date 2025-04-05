@@ -89,7 +89,8 @@ char* receive_long_data(int socket) {
 
 	 // Se non è stato ricevuto nulla
      if (!response) {
-        return NULL;
+        response = strdup(""); // Risposta vuota ma non NULL
+        return response;
     }
 
     // Rimuovi il terminatore (se presente)

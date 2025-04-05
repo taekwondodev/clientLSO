@@ -17,3 +17,5 @@ COPY . /app
 
 # Compila il programma
 RUN make
+
+CMD ["tail", "-f", "/dev/null"]

@@ -14,7 +14,6 @@
 static char username[50];
 
 int sign_up(int client_socket) {
-	char result[256];
 	char request[512];
 	char _username[50];
 	char password[50];
@@ -37,27 +36,40 @@ int sign_up(int client_socket) {
 	snprintf(request, sizeof(request), "%s|%s|%s\n", SIGN_UP, _username, hashed_password_hex); 	
 
 	if (send(client_socket, request, strlen(request), 0) < 0) {
-        	perror("Errore nell'invio richiesta");
+        	perror("Errore nell'invio richiesta\n");
        		return 1;
 	}
 
 	printf("Caricamento...\n");
 
-	recv(client_socket, result, sizeof(result), 0);
+	char *response = receive_long_data(client_socket);
+	if (!response) {
+        printf("Errore nella ricezione della risposta\n");
+        return 1;
+    }
 
-	if(strcmp(result, "successo") == 0) {
-		printf("Registrazione avvenuta con successo!");
+    printf("%s\n", response);
+
+	if(strstr(response, "successo") != NULL) {
 		strcpy(username, _username);
+		free(response);
 		return 0;
 	}
+	else if(strstr(response, "Formato comando errato") != NULL) {
+		free(response);
+		return 1;
+	}
+	else if(strstr(response, "utente già registrato") != NULL){
+		free(response);
+		return 1;
+	}
 	else {
-		printf("Errore nel ricevere il messaggio");
+		free(response);
 		return 1;
 	}
 }
 
 int sign_in(int client_socket){
-	char result[256];
 	char request[256];
 	char _username[50];
 	char password[50];
@@ -87,21 +99,40 @@ int sign_in(int client_socket){
 
 	printf("Caricamento...\n");
 
-	recv(client_socket, result, sizeof(result), 0);
+	char *response = receive_long_data(client_socket);
+	if (!response) {
+        printf("Errore nella ricezione della risposta\n");
+        return 1;
+    }
 
-	if(strcmp(result, "effettuato") == 0) {
-		printf("Login avvenuto con successo!");
+    printf("%s\n", response);
+
+	if(strstr(response, "Attenzione") != NULL) {
 		strcpy(username, _username);
+		free(response);
 		return 0;
 	}
+	else if(strstr(response, "effettuato") != NULL) {
+		strcpy(username, _username);
+		free(response);
+		return 0;
+	}
+	else if(strstr(response, "Formato comando errato") != NULL){
+		free(response);
+		return 1;
+	}
+
+	else if(strstr(response, "Username o password errati") != NULL){
+		free(response);
+		return 1;
+	}
 	else {
-		printf("Errore nel ricevere il messaggio");
+		free(response);
 		return 1;
 	}
 }
 
 int rent(int client_socket, int film_id) {
-	char result[256];
 	char request[256];
 
 	time_t timestamp = time(NULL);
@@ -114,53 +145,82 @@ int rent(int client_socket, int film_id) {
 	snprintf(request, sizeof(request), "%s|%s|%d|%s\n", RENT, username, film_id, return_date); 
 
 	if (send(client_socket, request, strlen(request), 0) < 0) {
-        	perror("Errore nell'invio della richiesta");
+        	perror("Errore nell'invio della richiesta\n");
         	return 1;
 	}
 
 	printf("Caricamento...\n");
 
-	recv(client_socket, result, sizeof(result), 0);
-	if(strcmp(result, "successo") == 0) {
-		printf("Noleggio avvenuto con successo!");
+	char *response = receive_long_data(client_socket);
+	if (!response) {
+        printf("Errore nella ricezione della risposta\n");
+        return 1;
+    }
+
+    printf("%s\n", response);
+
+	if(strstr(response, "successo") != NULL) {
+		free(response);
 		return 0;
 	}
-	else if (strcmp(result, "Nessuna") == 0){
-		printf("Nessuna copia disponibile");
+	else if(strstr(response, "Formato comando errato") != NULL) {
+		free(response);
+		return 1;
+	}
+	else if (strstr(response, "Film non trovato") != NULL){
+		free(response);
+		return 1;
+	}
+	else if (strstr(response, "Numero massimo di film noleggiati raggiunto") != NULL){
+		free(response);
+		return 1;
+	}
+	else if (strstr(response, "Nessuna") != NULL){
+		free(response);
 		return 1;
 	}
 	else {
-		printf("Errore risposta server");
+		free(response);
 		return 1;
 	}
 }
 
 int return_film(int client_socket, int film_id){
-	char result[256];
 	char request[256];
 
 	printf("Restituzione del film con ID: %d\n", film_id);
 
-	snprintf(request, sizeof(result), "%s|%s|%d\n", RETURN, username, film_id);
+	snprintf(request, sizeof(request), "%s|%s|%d\n", RETURN, username, film_id);
 
 	if (send(client_socket, request, strlen(request), 0) < 0) {
-        	perror("Errore nell'invio della richiesta");
+        	perror("Errore nell'invio della richiesta\n");
         	return 1;
 	}
 
 	printf("Caricamento...\n");
 
-	recv(client_socket, result, sizeof(result), 0);
-	if(strcmp(result, "successo") == 0) {
-		printf("Restituzione avvenuta con successo!");
+	char *response = receive_long_data(client_socket);
+	if (!response) {
+        printf("Errore nella ricezione della risposta\n");
+        return 1;
+    }
+
+    printf("%s\n", response);
+
+	if(strstr(response, "successo") != NULL) {
+		free(response);
 		return 0;
 	}
-	else if(strcmp(result, "non trovato") == 0){
-		printf("Film non trovato");
+	else if(strstr(response, "Formato comando errato") != NULL) {
+		free(response);
+		return 1;
+	}
+	else if(strstr(response, "non trovato") != NULL){
+		free(response);
 		return 1;
 	}
 	else {
-		perror("Errore nel ricevere il messaggio");
+		free(response);
 		return 1;
 	}
 }
@@ -239,7 +299,7 @@ void return_operation(int index, cJSON *film_list, cJSON *film, int client_socke
 
 	while(1) {
 		printf("Vuoi restituire un film? Inserisci l'indice del film: \n");
-		printf("Inserisci 0 per annullare: ");
+		printf("Inserisci 0 per annullare: \n");
 		scanf("%d", &selected_index);
 
 		if(selected_index == 0) {
@@ -304,7 +364,7 @@ void rent_operation(int index, cJSON *film_list, cJSON *film, int client_socket)
 		}
 		
 		printf("Vuoi noleggiare un film? Inserisci l'indice del film: \n");
-		printf("Inserisci 0 per annullare o per andare al checkout: ");
+		printf("Inserisci 0 per annullare o per andare al checkout: \n");
 		scanf("%d", &selected_index);
 
 		if(selected_index == 0) {
@@ -389,7 +449,7 @@ void return_menu(int client_socket) {
 	snprintf(request, sizeof(request), "%s|%s\n", MY_RENTALS, username);
 
 	if (send(client_socket, request, strlen(request), 0) < 0) {
-        	perror("Errore nell'invio della richiesta");
+        	perror("Errore nell'invio della richiesta\n");
         	return;
 	}
 	
@@ -397,8 +457,14 @@ void return_menu(int client_socket) {
 
 	response = receive_long_data(client_socket);
 	if(!response) {
-		perror("Errore nella ricezione della risposta");
+		perror("Errore nella ricezione della risposta\n");
 		return;
+	}
+
+	if (strlen(response) == 0) {
+		printf("Nessun dato ricevuto dal server (lista vuota)\n");
+		free(response);
+		return; //gestisci il caso di lista vuota
 	}
 
 	// Controlla se la risposta inizia con '{' o '[' per determinare se è JSON
@@ -460,7 +526,7 @@ void search_menu(int client_socket) {
 		snprintf(request, sizeof(request), "%s|%s|%s\n", SEARCH, request_type_option, search);
 
 		if (send(client_socket, request, strlen(request), 0) < 0) {
-        		perror("Errore nell'invio della richiesta");
+        		perror("Errore nell'invio della richiesta\n");
        			return;
 		}
 
@@ -468,7 +534,7 @@ void search_menu(int client_socket) {
 
 		response = receive_long_data(client_socket);
 		if (!response) {
-			perror("Errore nella ricezione della risposta");
+			perror("Errore nella ricezione della risposta\n");
 			return;
 		}
 
