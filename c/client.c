@@ -31,7 +31,7 @@ int sign_up(int client_socket) {
 	hash_password(password, hashed_password);
 	// Converti l'hash binario in stringa esadecimale
     	for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        	snprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
+        	snprintf(hashed_password_hex + 2*i, 3, "%02x", hashed_password[i]);
     	}
 
 	snprintf(request, sizeof(request), "%s|%s|%s\n", SIGN_UP, _username, hashed_password_hex); 	
@@ -75,7 +75,7 @@ int sign_in(int client_socket){
 	hash_password(password, hashed_password);
 	// Converti l'hash binario in stringa esadecimale
     	for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-       		snprintf(hashed_password_hex + 2*i, "%02x", hashed_password[i]);
+       		snprintf(hashed_password_hex + 2*i, 3, "%02x", hashed_password[i]);
    	}
 
 	snprintf(request, sizeof(request), "%s|%s|%s\n", SIGN_IN, _username, hashed_password_hex);

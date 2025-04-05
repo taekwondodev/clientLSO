@@ -17,6 +17,3 @@ COPY . /app
 
 # Compila il programma
 RUN make
-
-# Esegui il programma (opzionale)
-CMD ["./client"]
