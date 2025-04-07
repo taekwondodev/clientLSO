@@ -132,16 +132,16 @@ int sign_in(int client_socket){
 	}
 }
 
-int rent(int client_socket, int film_id) {
-	char request[256];
-	char return_date[11];
-	int valid_date = 0;
-
-	printf("Noleggio del film con ID: %d\n", film_id);
-
-	while(!valid_date){
+void check_rent_date(int *valid_date, char *return_date, size_t length){
+	while(!*valid_date){
 		printf("Inserisci la data di restituzione (YYYY-MM-DD): ");
-        if (fgets(return_date, sizeof(return_date), stdin)) {
+        if (fgets(return_date, length, stdin)) {
+			// Pulisci eventuali caratteri rimanenti nel buffer
+            if (!strchr(return_date, '\n')) {
+                int c;
+                while ((c = getchar()) != '\n' && c != EOF);
+            }
+
             return_date[strcspn(return_date, "\n")] = '\0'; // Rimuove newline
             
             // Validazione semplice del formato
@@ -152,12 +152,22 @@ int rent(int client_socket, int film_id) {
                 isdigit(return_date[5]) && isdigit(return_date[6]) &&
                 isdigit(return_date[8]) && isdigit(return_date[9])) {
                 
-                valid_date = 1;
+                *valid_date = 1;
             } else {
                 printf("Formato data non valido. Usa YYYY-MM-DD\n");
             }
         }
 	}
+}
+
+int rent(int client_socket, int film_id) {
+	char request[256];
+	char return_date[11];
+	int valid_date = 0;
+
+	printf("Noleggio del film con ID: %d\n", film_id);
+
+	check_rent_date(&valid_date, return_date, sizeof(return_date));
 
 	snprintf(request, sizeof(request), "%s|%s|%d|%s\n", RENT, username, film_id, return_date); 
 
@@ -189,8 +199,9 @@ int rent(int client_socket, int film_id) {
 		return 1;
 	}
 	else if (strstr(response, "Numero massimo di film noleggiati raggiunto")){
+		printf("Operazione annullata, ritorno al menu");
 		free(response);
-		return 1;
+		return 2;
 	}
 	else if (strstr(response, "Nessuna")){
 		free(response);
@@ -347,6 +358,11 @@ void checkout(int client_socket, int *cart_size, int *cart) {
         printf("Film ID: %d\n", cart[i]);
         int result = rent(client_socket, cart[i]);
 
+		if(result==2){
+			*cart_size = 0;
+			return;
+		}
+
 		if(result == 0){
 			// Rimuovi l'elemento spostando gli elementi successivi
             for (int j = i; j < *cart_size - 1; j++) {
@@ -372,9 +388,10 @@ void rent_operation(int client_socket) {
 			break;
 		}
 		
-		printf("Vuoi noleggiare un film? Inserisci l'indice del film: \n");
+		printf("Vuoi noleggiare un film? Inserisci l'id del film: \n");
 		printf("Inserisci 0 per annullare o per andare al checkout: \n");
 		scanf("%d", &selected_index);
+		while(getchar() != '\n'); // Pulisce il buffer di input
 
 		if(selected_index == 0) {
 			if (cart_size > 0) {
