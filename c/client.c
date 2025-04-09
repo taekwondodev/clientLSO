@@ -434,6 +434,12 @@ void return_menu(int client_socket) {
 
 	printf("%s\n", response);
 
+	if(strlen(response) == 0 || strcmp(response, "Film noleggiati:\n") == 0) {
+		printf("Non hai film noleggiati da poter restituire \n");
+		free(response);
+		return;
+	}
+
 	free(response);
 	response = NULL;
 
