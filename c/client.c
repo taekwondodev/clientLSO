@@ -440,10 +440,43 @@ void return_menu(int client_socket) {
 	return_operation(client_socket);
 }
 
+void search_operation(int client_socket, char* request_type_option, char* request, char* search, int n) {
+	if (strcmp(request_type_option, SEARCH_POPULAR) == 0) {
+		snprintf(request, 256, "%s|%s|%d\n", SEARCH, request_type_option, n); // 256 è la size di request
+	}
+	else {
+		snprintf(request, 256, "%s|%s|%s\n", SEARCH, request_type_option, search);
+	}
+
+	if (send(client_socket, request, strlen(request), 0) < 0) {
+		perror("Errore nell'invio della richiesta\n");
+		return;
+	}
+
+	printf("Caricamento...\n");
+
+	char *response = receive_long_data(client_socket);
+	if (!response) {
+		perror("Errore nella ricezione della risposta\n");
+		return;
+	}
+
+	printf("%s\n", response);
+
+	if(strlen(response) == 0 || strstr(response, "Nessun film trovato")) {
+		free(response);
+		return;
+	}
+	free(response);
+	response = NULL;
+
+	rent_operation(client_socket);
+}
+
 void search_menu(int client_socket) {
 	int choice;
+	int n;
 	char request[256];
-	char *request_type_option;
 	char search[50];
 
 	while(1) {
@@ -451,59 +484,39 @@ void search_menu(int client_socket) {
 		printf("Scegli un opzione: \n");
 		printf("1) Cerca per titolo \n");
 		printf("2) Cerca per genere \n");
-		printf("3) Torna indietro \n");
+		printf("3) Cerca per più popolari \n");
+		printf("4) Torna indietro \n");
 
 		scanf("%d", &choice);
 		while(getchar() != '\n'); // Pulisce il buffer di input
 
 		// Reset search and request_type_option for each iteration
         memset(search, 0, sizeof(search));
-        request_type_option = NULL;
 
 		switch(choice) {
 			case 1:
 				printf("Inserisci il titolo del film: \n");
 				fgets(search, sizeof(search), stdin);
 				search[strcspn(search, "\n")] = '\0'; // Rimuove il carattere di newline
-				request_type_option = SEARCH_TITLE;
+				search_operation(client_socket, SEARCH_TITLE, request, search, n);
 				break;
 			case 2:
 				printf("Inserisci il genere del film: \n");
 				fgets(search, sizeof(search), stdin);
 				search[strcspn(search, "\n")] = '\0'; // Rimuove il carattere di newline
-				request_type_option = SEARCH_GENRE;
+				search_operation(client_socket, SEARCH_GENRE, request, search, n);
 				break;
 			case 3:
+				printf("Inserisci il numero di film da visualizzare: \n");
+				scanf("%d", &n);
+				while(getchar() != '\n'); // Pulisce il buffer di input
+				search_operation(client_socket, SEARCH_POPULAR, request, search, n);
+				break;
+			case 4:
 				return;
 			default:
 				printf("Valore non valido\n");
 				continue;
 		}
-
-		snprintf(request, sizeof(request), "%s|%s|%s\n", SEARCH, request_type_option, search);
-
-		if (send(client_socket, request, strlen(request), 0) < 0) {
-        	perror("Errore nell'invio della richiesta\n");
-       		return;
-		}
-
-		printf("Caricamento...\n");
-
-		char *response = receive_long_data(client_socket);
-		if (!response) {
-			perror("Errore nella ricezione della risposta\n");
-			return;
-		}
-
-		printf("%s\n", response);
-
-		if(strlen(response) == 0 || strstr(response, "Nessun film trovato")) {
-			free(response);
-			continue;
-		}
-		free(response);
-		response = NULL;
-
-		rent_operation(client_socket);
     }
 }

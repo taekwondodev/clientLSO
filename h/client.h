@@ -5,6 +5,7 @@
 #define SEARCH "SEARCH"
 #define SEARCH_TITLE "TITLE"
 #define SEARCH_GENRE "GENRE"
+#define SEARCH_POPULAR "POPULAR"
 #define RENT "RENT"
 #define RETURN "RETURN"
 #define MY_RENTALS "MYRENTALS"
