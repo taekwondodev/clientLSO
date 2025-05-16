@@ -1,4 +1,4 @@
-# Client Videoteca
+# Client Videoteca
 
 This is a Client C Socket for University Project: Videoteca
 
